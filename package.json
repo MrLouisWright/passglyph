@@ -1,7 +1,7 @@
 {
   "name": "passglyph",
   "version": "2.0.0",
-  "description": "Egyptian hieroglyphs instead of password dots: the password and confirm fields show the same glyph sequence when they match, so typos are visible where they happen, without revealing the password. Per-instance non-extractable HMAC key, prefix-keyed 4-6 bits per glyph (no per-character mapping), canvas-only sprite (no code points in the DOM), real input stays type=password, falls back to dots. Badge mode, <pass-glyph>, React & Vue. Zero deps.",
+  "description": "Egyptian hieroglyphs instead of password dots: matching passwords show the same glyphs, typos show where they happen, nothing is revealed. Per-instance non-extractable HMAC key over each prefix (no per-character mapping), 4-6 bits/glyph, canvas sprite, input stays type=password, dot fallback. React, Vue, <pass-glyph>. Zero deps.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
