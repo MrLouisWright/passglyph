@@ -1,0 +1,129 @@
+{
+  "name": "passglyph",
+  "version": "1.0.0",
+  "description": "Matching glyphs next to a password and its confirm field: spot a typo without revealing the password. Salted per page (crypto.getRandomValues), PBKDF2 via WebCrypto, capped 4-12 bits shown, canvas only (nothing derived in the DOM), aria-live match status, CSP-safe. Vanilla, <pass-glyph>, React & Vue. Zero deps.",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "unpkg": "./dist/passglyph.global.js",
+  "jsdelivr": "./dist/passglyph.global.js",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./element": {
+      "import": {
+        "types": "./dist/element.d.ts",
+        "default": "./dist/element.mjs"
+      },
+      "require": {
+        "types": "./dist/element.d.cts",
+        "default": "./dist/element.cjs"
+      }
+    },
+    "./react": {
+      "import": {
+        "types": "./dist/react.d.ts",
+        "default": "./dist/react.mjs"
+      },
+      "require": {
+        "types": "./dist/react.d.cts",
+        "default": "./dist/react.cjs"
+      }
+    },
+    "./vue": {
+      "import": {
+        "types": "./dist/vue.d.ts",
+        "default": "./dist/vue.mjs"
+      },
+      "require": {
+        "types": "./dist/vue.d.cts",
+        "default": "./dist/vue.cjs"
+      }
+    },
+    "./global": "./dist/passglyph.global.js",
+    "./element.global": "./dist/passglyph-element.global.js",
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "SECURITY-DESIGN.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "sideEffects": [
+    "./dist/element.*",
+    "./dist/passglyph-element.global.js"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "peerDependencies": {
+    "react": ">=16.8",
+    "vue": ">=3"
+  },
+  "peerDependenciesMeta": {
+    "react": {
+      "optional": true
+    },
+    "vue": {
+      "optional": true
+    }
+  },
+  "scripts": {
+    "build": "node scripts/build.mjs",
+    "prepack": "npm run build",
+    "test": "npm run build && node --test test/*.test.js",
+    "hero": "node scripts/hero.mjs"
+  },
+  "keywords": [
+    "password",
+    "password-confirmation",
+    "confirm-password",
+    "typo",
+    "chroma-hash",
+    "hashmask",
+    "visual-hash",
+    "glyph",
+    "web-component",
+    "accessibility",
+    "react",
+    "vue",
+    "webcrypto",
+    "pbkdf2",
+    "forms"
+  ],
+  "author": "Louis Wright <hello@louiswright.co.uk> (https://github.com/MrLouisWright)",
+  "license": "MIT",
+  "funding": {
+    "type": "stripe",
+    "url": "https://donate.stripe.com/aFa00lek3cvX4Ds2Fk9EI0b"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MrLouisWright/passglyph.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MrLouisWright/passglyph/issues"
+  },
+  "homepage": "https://mrlouiswright.github.io/passglyph/",
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@types/react": "^18.3.31",
+    "esbuild": "^0.25.10",
+    "jsdom": "^24.1.3",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "typescript": "^5.9.3",
+    "vue": "^3.5.44"
+  }
+}
