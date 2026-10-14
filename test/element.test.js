@@ -26,3 +26,13 @@ test('<pass-glyph for confirm> by id', async () => {
   p.document.body.append(el); await sleep(5);
   assert.equal(p.document.querySelectorAll('canvas').length, 2);
 });
+
+test('<pass-glyph> defaults to inline hieroglyph mode', async () => {
+  const { INLINE } = await import('./helpers.js');
+  const p = page({ html: '<pass-glyph><input type="password"><input type="password"></pass-glyph>' });
+  defineElement('pass-glyph-i', p.window.customElements, p.window.HTMLElement);
+  const el = p.document.createElement('pass-glyph-i'); el.options = INLINE;
+  el.innerHTML = '<input type="password"><input type="password">'; p.document.body.append(el); await sleep(5);
+  assert.equal(el.querySelectorAll('canvas.passglyph-overlay').length, 2);
+  assert.equal(el.querySelector('input').type, 'password');
+});

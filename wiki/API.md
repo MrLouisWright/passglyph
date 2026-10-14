@@ -4,35 +4,37 @@
 
 | Option | Type | Default | Notes |
 |---|---|---|---|
-| `bits` | `number` | `10` | 4–12; values above 12 are clamped to 12 (hard cap) |
-| `minLength` | `number` | `8` | ≥ 4. Below it: neutral glyph, no announcement |
-| `iterations` | `number` | `60000` | PBKDF2 iterations, ≥ 10,000 |
-| `debounce` | `number` | `300` | ms of quiet before an update, ≥ 100 |
-| `budget` | `number` | `250` | Fixed extra delay so repaint timing is input-independent |
-| `size` | `number` | `20` | CSS px |
-| `unstyled` | `boolean` | `false` | No CSSOM styles at all |
+| `mode` | `'inline' \| 'badge'` | `'inline'` | Hieroglyphs in the field, or the v1 glyph beside it |
+| `bits` | `number` | inline `5`, badge `10` | Inline: per position, 4–6. Badge: total, 4–12. Clamped |
+| `minLength` | `number` | `8` | ≥ 4. Gates the announcement (badge: also the glyph) |
+| `debounce` | `number` | `300` | ms before the announcement (badge: repaint), ≥ 100 |
+| `size` | `number` | inline `1.1` em, badge `20` px | Glyph cell / badge size |
+| `iterations` | `number` | `60000` | Badge only. PBKDF2, ≥ 10,000 |
+| `budget` | `number` | `250` | Badge only. Fixed repaint deadline |
+| `unstyled` | `boolean` | `false` | No badge styles; live region not hidden |
 | `labels` | `{ match?, mismatch? }` | English | Live-region text |
-| `onChange` | `(m: boolean \| null) => void` | — | After each settled update |
-| `mount` | `(input, canvas, which) => void` | after input | Custom glyph placement |
-| `mountStatus` | `(el) => void` | after confirm glyph | Custom live-region placement |
+| `onChange` | `(m: boolean \| null) => void` | — | Match state |
+| `onFallback` | `(reason: 'canvas' \| 'webcrypto') => void` | — | Native dots kept |
+| `mount` / `mountStatus` | functions | — | Placement of badge canvases / live region |
 | `crypto` | `Crypto` | `globalThis.crypto` | e.g. `require('node:crypto').webcrypto` in tests |
+| `unsafeSalt` | `Uint8Array` | — | **Testing only**: reproducible sequences |
 
-Returns `detach()`, which removes listeners, canvases and the live region, and cancels pending updates.
-
-### DOM contract
+### DOM contract (inline)
 
 ```html
-<input type="password"><canvas class="passglyph-glyph" aria-hidden="true" width="40" height="40"></canvas>
-<input type="password"><canvas class="passglyph-glyph passglyph-match" aria-hidden="true" ...></canvas>
+<input type="password" style="color: transparent; -webkit-text-fill-color: transparent; caret-color: …; letter-spacing: …px">
+<canvas class="passglyph-overlay" aria-hidden="true"></canvas>
+<!-- same for confirm -->
 <span class="passglyph-sr" role="status" aria-live="polite">Passwords match</span>
 ```
 
-Nothing else, and nothing password-derived (see [[Security Design]]).
+The styles are set via CSSOM, not markup. Nothing in the DOM depends on the password except the match text. There are no code points and no path data. `detach()` restores the original inline styles exactly.
 
 ## `<pass-glyph>` (`passglyph/element`)
 
 | Attribute | Maps to |
 |---|---|
+| `mode` | `mode` |
 | `bits` | `bits` |
 | `min-length` | `minLength` |
 | `iterations` | `iterations` |
@@ -45,15 +47,9 @@ Property `options` takes any other option. Event `passglyph-change` has `detail.
 | Export | Signature |
 |---|---|
 | `createSalt` | `(crypto?) → Uint8Array` (28 bytes: `passglyph/v1` + 16 random) |
-| `deriveIndex` | `(value, salt, bits?, iterations?, crypto?) → Promise<number>` |
-| `glyphOps` | `(index, bits, ink?) → Op[]` |
-| `neutralOps` | `(ink?) → Op[]` |
-| `paint` | `(ctx, Path2D, ops, size, dpr?)` |
-| `opsToSVG` | `(ops, size?) → string`, for legends/docs only |
-| `clampBits` | `(n) → 4..12` |
-| `decompose` | `(index, bits) → { shape, colour, mark, pips, frame }` |
-| `COLOURS`, `SHAPES`, `SHAPE_NAMES`, `MAX_BITS`, `MIN_BITS`, `MIN_ITERATIONS`, `DEFAULT_ITERATIONS` | constants |
-
-## Glyph alphabet
-
-Bits are spent in this order: **shape** (3 bits: circle, square, triangle, diamond, pentagon, hexagon, star, plus) → **colour** (3: Okabe–Ito) → **inner mark** (2: none, dot, bar, ring) → **pips** (2: 0–3 dots) → **frame** (2: none, rounded square, circle, corner ticks).
+| `instanceKey` | `(salt, crypto?) → Promise<CryptoKey>`, non-extractable HMAC-SHA-256; zero-fills `salt` |
+| `glyphSequence` | `(key, value, bits?, crypto?) → Promise<number[]>`, one index per code point |
+| `clampGlyphBits` | `(n) → 4..6` |
+| `hieroglyphPath` | `(i) → string`, path data in a 32×32 box (`passglyph/hieroglyphs`) |
+| `HIEROGLYPH_COUNT`, `CODEPOINTS` | `64`; the code points (build-time reference, never put in the DOM) |
+| `deriveIndex`, `glyphOps`, `neutralOps`, `paint`, `opsToSVG`, `clampBits`, `decompose` | Badge mode (`passglyph/glyph`) |

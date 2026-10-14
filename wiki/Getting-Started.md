@@ -22,7 +22,7 @@ import { attach } from 'passglyph';
 const detach = attach(document.getElementById('pw'), document.getElementById('pw2'));
 ```
 
-A glyph appears after each field. Type at least 8 characters in both: the glyphs match when the passwords match, and screen readers hear "Passwords match".
+The dots in both fields become hieroglyphs. When the rows match, the passwords match. When they don't, the first differing glyph marks the typo. Screen readers hear "Passwords match" or "Passwords don't match" once both fields have 8 characters.
 
 ## 3. React to the match state (optional)
 
@@ -30,27 +30,23 @@ A glyph appears after each field. Type at least 8 characters in both: the glyphs
 attach(pw, pw2, { onChange: (match) => { submit.disabled = match === false; } });
 ```
 
-`match` is `true`, `false`, or `null` (not enough input yet).
+`match` is `true`, `false` or `null` (not enough input yet).
 
-## 4. Style it (optional)
-
-passglyph sets a few layout properties through the CSSOM (size, small margin, visually hidden status). For full control:
+## 4. Choose the mode and bits (optional)
 
 ```js
-attach(pw, pw2, { unstyled: true });
+attach(pw, pw2, { bits: 4 });            // 16 glyphs per position: leaks less, misses more typos at the exact position
+attach(pw, pw2, { mode: 'badge' });      // v1: one PBKDF2 glyph beside each field, ≤ 12 bits total
 ```
 
-```css
-.passglyph-glyph { width: 20px; height: 20px; margin-inline-start: 8px; vertical-align: middle; }
-.passglyph-mismatch { outline: 2px dashed #D55E00; }
-.passglyph-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
-```
+## 5. Styling
 
-## 5. Clean up
+Inline mode inherits the input's font, size, colour and padding. The overlay is drawn in the input's text colour. Glyph cells are `size` em wide (default `1.1`). passglyph only sets CSSOM properties (no `<style>`), so it's CSP-safe.
 
-Call `detach()` when the form goes away. Frameworks: see [[Framework Usage]].
+## 6. Clean up
 
-## Requirements
+Call `detach()` when the form goes away. It restores the inputs exactly. Frameworks: see [[Framework Usage]].
 
-- A **secure context** (HTTPS or `localhost`), because WebCrypto `subtle` isn't available otherwise. `attach()` throws if WebCrypto is missing; it never falls back to `Math.random`.
-- Canvas + `Path2D` for the glyph. Without them passglyph shows no glyph but keeps the accessible status.
+## Requirements and fallback
+
+- A **secure context** (HTTPS or `localhost`) for WebCrypto. Without it, or without canvas, `Path2D` or `measureText`, passglyph leaves native dots and calls `onFallback(reason)`. It never uses `Math.random`.

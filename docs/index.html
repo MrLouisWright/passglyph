@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src-elem 'self' https://fonts.googleapis.com; style-src-attr 'unsafe-inline'; font-src https://fonts.gstatic.com; img-src 'self' data: https://img.shields.io https://github.com https://avatars.githubusercontent.com https://private-avatars.githubusercontent.com; connect-src 'none'; base-uri 'none'; form-action 'none'">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>passglyph · Matching glyphs for password + confirm fields, without revealing the password</title>
+<title>passglyph · Hieroglyph password masking: matching passwords show matching glyphs</title>
 <meta name="description" content="Show matching glyphs next to a password field and its confirmation so users spot typos without revealing the password. Fresh salt per page, PBKDF2 via WebCrypto, 4-12 bits shown, canvas only, accessible, CSP-safe. Vanilla, web component, React, Vue.">
 <meta name="theme-color" content="#0a0b0d">
 <link rel="canonical" href="https://mrlouiswright.github.io/passglyph/">
@@ -37,10 +37,10 @@
 <section class="hero">
   <div class="wrap wide hero-grid">
     <div class="hero-copy">
-      <p class="eyebrow"><span class="dot" aria-hidden="true"></span> npm package · MIT · &lt; 3 KB gzip · zero deps</p>
+      <p class="eyebrow"><span class="dot" aria-hidden="true"></span> npm package · MIT · v2 · zero deps</p>
       <h1>passglyph</h1>
-      <p class="tagline">Spot a mistyped "confirm password" without showing the password.</p>
-      <p class="lede">passglyph draws a small glyph next to a password field and its confirm field. Same password, same glyph. The glyph is salted fresh on every page load, derived with PBKDF2, capped at a few bits, drawn on canvas only, and backed by an accessible "Passwords match" announcement. Vanilla JS, a <code>&lt;pass-glyph&gt;</code> web component, React and Vue.</p>
+      <p class="tagline">Hieroglyphs instead of dots. Matching passwords, matching glyphs.</p>
+      <p class="lede">passglyph v2 replaces the masking dots inside your password fields with Egyptian hieroglyphs. If the confirmation matches, both fields show the same sequence; a typo changes every glyph from the first wrong character on. Each glyph comes from a keyed hash of the whole prefix with a fresh per-page key, so nothing about the characters is revealed, and repeated letters don't repeat glyphs. The input stays <code>type="password"</code>.</p>
       <div class="install">
         <code><span class="prompt" aria-hidden="true">$</span> npm i passglyph</code>
         <button class="copy" type="button" data-copy="npm i passglyph" aria-label="Copy install command">Copy</button>
@@ -53,9 +53,9 @@
         <a class="btn" href="https://github.com/MrLouisWright/passglyph"><span>Source on GitHub</span></a>
       </div>
     </div>
-    <figure class="pg-alpha" aria-label="Sample glyphs from the alphabet">
-      <div id="alphabet" class="pg-alpha-grid"></div>
-      <figcaption>A random sample of the 1,024 glyphs at the default 10 bits. Shape and mark differ as well as colour (Okabe–Ito palette).</figcaption>
+    <figure class="pg-alpha" aria-label="The hieroglyph alphabet">
+      <canvas id="alphabet" width="384" height="192" aria-hidden="true"></canvas>
+      <figcaption>The 64-glyph alphabet (U+13000–U+1342F, drawn from a bundled sprite). The default uses the first 32, so 5 bits per position.</figcaption>
     </figure>
   </div>
 </section>
@@ -69,23 +69,32 @@
         <div class="pg-field"><input id="pw" type="password" autocomplete="new-password" spellcheck="false"></div>
         <label for="pw2">Confirm password</label>
         <div class="pg-field"><input id="pw2" type="password" autocomplete="new-password" spellcheck="false"></div>
-        <p class="pg-status" id="visible-status" aria-hidden="true">Type at least <span id="min-n">8</span> characters in both fields.</p>
-        <label><input type="checkbox" id="show"> Show passwords (demo only)</label>
+        <p class="pg-status" id="visible-status" aria-hidden="true">Type at least 8 characters in both fields.</p>
+        <fieldset class="pg-mode"><legend>Mode</legend>
+          <label><input type="radio" name="mode" value="inline" checked> inline (v2)</label>
+          <label><input type="radio" name="mode" value="badge"> badge (v1)</label>
+        </fieldset>
+        <label class="pg-check"><input type="checkbox" id="naive"> Show why per-character mapping is unsafe</label>
+        <div id="naive-box" class="pg-naive" hidden>
+          <p><strong>Unsafe:</strong> the same password with each character mapped to a fixed glyph (a substitution cipher). This is what passglyph does <em>not</em> do:</p>
+          <canvas id="naive-cv" width="600" height="40" aria-hidden="true"></canvas>
+          <p id="naive-note" class="fp-note"></p>
+          <p class="fp-note">passglyph hashes the whole prefix with a secret per-page key instead, so <code>aaaa</code> shows four unrelated glyphs and nothing repeats.</p>
+        </div>
       </form>
       <div class="pg-panel">
-        <label for="bits">Bits shown: <output id="bits-v">10</output></label>
-        <input id="bits" type="range" min="4" max="12" value="10" step="1">
+        <label for="bits">Bits per glyph: <output id="bits-v">5</output></label>
+        <input id="bits" type="range" min="4" max="6" value="5" step="1">
         <table class="tbl pg-trade">
           <tbody>
-            <tr><th scope="row">Distinct glyphs</th><td id="t-glyphs">1,024</td></tr>
-            <tr><th scope="row">Typo slips through</th><td id="t-miss">0.098 % (1 in 1,024)</td></tr>
-            <tr><th scope="row">Leak to a screenshot (no salt)</th><td>0 bits</td></tr>
-            <tr><th scope="row">Worst case (salt stolen too)</th><td id="t-leak">guesses ÷ 1,024</td></tr>
-            <tr><th scope="row">40-bit password, worst case</th><td id="t-left">30 bits left</td></tr>
+            <tr><th scope="row">Alphabet</th><td id="t-glyphs">32 hieroglyphs</td></tr>
+            <tr><th scope="row">A typo slips past one position</th><td id="t-miss">1 in 32</td></tr>
+            <tr><th scope="row">…past every later position (10 chars)</th><td id="t-miss10">1 in 10<sup>15</sup></td></tr>
+            <tr><th scope="row">Leak to a screenshot (no key)</th><td>0 bits</td></tr>
+            <tr><th scope="row">If the key were stolen too</th><td id="t-leak">5 bits per position</td></tr>
           </tbody>
         </table>
-        <div class="pg-bar" aria-hidden="true"><span id="bar-miss"></span><span id="bar-leak"></span></div>
-        <p class="fp-note">Left: typo protection. Right: worst-case leak. The default of 10 bits sits where typo misses are rare and the leak is still small. The cap is 12.</p>
+        <p class="fp-note" id="trade-note">With 5 bits a single mistyped position is caught 31 times out of 32, and the following positions almost always differ as well. The glyphs reveal nothing without the per-page key, which is non-extractable and never leaves memory.</p>
       </div>
     </div>
   </div>
@@ -94,17 +103,16 @@
 <section class="sec" id="threats">
   <div class="wrap narrow">
     <h2>Threat model, briefly</h2>
-    <p class="big">Chroma-Hash and HashMask (2009–13) showed a fast hash as colours, unsalted or with a fixed salt, which gave a stable fingerprint of your password on every visit. passglyph is built so that doesn't happen:</p>
     <ul class="pg-list">
-      <li><strong>Fresh 128-bit salt per form</strong> from <code>crypto.getRandomValues</code>. A screenshot can't be compared across sessions or sites, and is useless without the salt (which never leaves memory).</li>
-      <li><strong>PBKDF2-SHA-256, 60,000 iterations</strong> via WebCrypto, debounced, with a non-extractable key. Derived bytes are zeroed after use.</li>
-      <li><strong>4–12 bits shown, hard cap 12.</strong> Even if the salt were stolen, a glyph narrows guesses by at most 2<sup>bits</sup>.</li>
-      <li><strong>Nothing for short input</strong> (neutral glyph under 8 characters) and no per-keystroke animation, so length and rhythm don't leak.</li>
-      <li><strong>Fixed-deadline repaint</strong>: the same work and the same delay for any input.</li>
-      <li><strong>Canvas only.</strong> The DOM is byte-identical for any two passwords. Glyphs are <code>aria-hidden</code>, and a polite live region says "Passwords match".</li>
-      <li><strong>No network, no storage, no inline style markup, no eval.</strong> Works under a strict CSP. Password managers work as usual.</li>
+      <li><strong>No character-to-glyph mapping.</strong> Glyph <em>i</em> = HMAC-SHA-256(key, password[0..i]) truncated to 4–6 bits. Identical characters don't give identical glyphs, and a mismatch shows from the first wrong position on.</li>
+      <li><strong>Fresh 128-bit key per form</strong> from <code>crypto.getRandomValues</code>, imported as a <em>non-extractable</em> WebCrypto key. The raw bytes are wiped, so a screenshot or recording is meaningless in any other session.</li>
+      <li><strong>Honest leak:</strong> a recording gives about <em>b</em> bits per position under that session's key. That's useless without the key, but <em>with</em> it, prefix hashing lets an attacker recover the password one character at a time (about 95 guesses per position). The key never leaves memory, and an attacker with memory access can read the field anyway.</li>
+      <li><strong>Typo position is visible:</strong> the sequences diverge exactly where you mistyped. That's the point, and it's documented.</li>
+      <li><strong>No extra length or timing leak:</strong> one glyph per character, exactly like the dots, redrawn in one frame per input with no animation.</li>
+      <li><strong>Canvas only.</strong> No code points, glyph names or derived bits in the DOM. The snapshot is identical for any two passwords. Overlays are <code>aria-hidden</code>, and a live region says "Passwords match".</li>
+      <li><strong>Real input untouched:</strong> it stays <code>type="password"</code>, so autofill, password managers, mobile keyboards and screen readers keep working. It falls back to dots if anything is unsupported.</li>
     </ul>
-    <p class="big"><strong>Not</strong> a strength meter, and no help against keyloggers, malicious extensions or scripts on the page: they can read the field directly. Full write-up: <a href="https://github.com/MrLouisWright/passglyph/blob/main/SECURITY-DESIGN.md">SECURITY-DESIGN.md</a> · <a href="https://github.com/MrLouisWright/passglyph/blob/main/docs/launch-post.md">launch post</a>.</p>
+    <p class="big"><strong>Not</strong> a strength meter, and no help against keyloggers or malicious scripts on the page. Full write-up: <a href="https://github.com/MrLouisWright/passglyph/blob/main/SECURITY-DESIGN.md">SECURITY-DESIGN.md</a> · <a href="https://github.com/MrLouisWright/passglyph/blob/main/docs/launch-post.md">launch post</a>.</p>
   </div>
 </section>
 
@@ -112,15 +120,13 @@
   <div class="wrap">
     <h2>Usage</h2>
     <div class="usage">
-      <div class="u"><p class="u-t">// Vanilla</p><pre><code>import { attach } from 'passglyph';
-const detach = attach(pw, confirm, { bits: 10 });</code></pre></div>
+      <div class="u"><p class="u-t">// Vanilla (inline hieroglyphs by default)</p><pre><code>import { attach } from 'passglyph';
+const detach = attach(pw, confirm);</code></pre></div>
+      <div class="u"><p class="u-t">// v1 badge mode</p><pre><code>attach(pw, confirm, { mode: 'badge' });</code></pre></div>
       <div class="u"><p class="u-t">&lt;!-- Web component --&gt;</p><pre><code>&lt;pass-glyph&gt;
   &lt;input type="password"&gt; &lt;input type="password"&gt;
 &lt;/pass-glyph&gt;</code></pre></div>
-      <div class="u"><p class="u-t">// React</p><pre><code>import { usePassGlyph } from 'passglyph/react';
-usePassGlyph(pwRef, confirmRef);</code></pre></div>
-      <div class="u"><p class="u-t">// Vue</p><pre><code>import { usePassGlyph } from 'passglyph/vue';
-usePassGlyph(pw, confirm);</code></pre></div>
+      <div class="u"><p class="u-t">// React / Vue</p><pre><code>usePassGlyph(pwRef, confirmRef, { bits: 5 });</code></pre></div>
     </div>
   </div>
 </section>

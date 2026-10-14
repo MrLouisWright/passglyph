@@ -1,0 +1,8 @@
+passglyph
+Copyright (c) 2026 Louis Wright. MIT License (see LICENSE).
+
+The hieroglyph bitmaps in src/hieroglyphs.ts (and dist/hieroglyphs.*) are derived from
+Noto Sans Egyptian Hieroglyphs, Copyright 2022 The Noto Project Authors
+(https://github.com/notofonts/egyptian-hieroglyphs), licensed under the SIL Open Font
+License, Version 1.1 (https://openfontlicense.org). The bitmaps are a derived rendering,
+not a font, and are distributed under the same OFL-1.1 terms.

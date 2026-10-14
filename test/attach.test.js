@@ -170,7 +170,11 @@ test('two forms on one page get independent salts', async () => {
   assert.ok(seen.size >= 6, String(seen.size));
 });
 
-test('throws without WebCrypto', () => {
-  const p = page();
-  assert.throws(() => attach(p.pw, p.pw2, { crypto: {} }), /WebCrypto/);
+test('without WebCrypto: no glyph, never Math.random, status still works, onFallback called', async () => {
+  const p = page(); const why = []; const rnd = Math.random; let used = 0; Math.random = () => (used++, rnd());
+  attach(p.pw, p.pw2, { ...FAST, crypto: {}, onFallback: (r) => why.push(r) });
+  type(p.pw, 'long-enough-pass'); type(p.pw2, 'long-enough-pass'); await settle(); Math.random = rnd;
+  assert.deepEqual(why, ['webcrypto']); assert.equal(used, 0);
+  assert.equal(p.document.querySelectorAll('canvas').length, 0);
+  assert.equal(p.document.querySelector('[role=status]').textContent, 'Passwords match');
 });

@@ -18,7 +18,7 @@ import 'passglyph/element'; // registers <pass-glyph>
 ```
 
 ```html
-<pass-glyph bits="10">
+<pass-glyph mode="inline" bits="5">
   <input type="password" autocomplete="new-password">
   <input type="password" autocomplete="new-password">
 </pass-glyph>
@@ -40,7 +40,7 @@ import { usePassGlyph } from 'passglyph/react';
 
 export function PasswordFields() {
   const pw = useRef(null), confirm = useRef(null);
-  usePassGlyph(pw, confirm, { bits: 10, onChange: (m) => console.log(m) });
+  usePassGlyph(pw, confirm, { mode: 'inline', onChange: (m) => console.log(m) });
   return (
     <>
       <label htmlFor="pw">Password</label><input id="pw" ref={pw} type="password" autoComplete="new-password" />
@@ -50,7 +50,7 @@ export function PasswordFields() {
 }
 ```
 
-The hook re-attaches (with a fresh salt) when `bits`, `minLength`, `iterations`, `size` or `debounce` change, and detaches on unmount. Use it in a client component in Next.js (`'use client'`).
+The hook re-attaches (with a fresh salt) when `mode`, `bits`, `minLength`, `iterations`, `size` or `debounce` change, and detaches on unmount. Use it in a client component in Next.js (`'use client'`).
 
 ## Vue 3
 
@@ -59,7 +59,7 @@ The hook re-attaches (with a fresh salt) when `bits`, `minLength`, `iterations`,
 import { ref } from 'vue';
 import { usePassGlyph } from 'passglyph/vue';
 const pw = ref(null), confirm = ref(null);
-usePassGlyph(pw, confirm, { bits: 10 });
+usePassGlyph(pw, confirm, { bits: 5 });
 </script>
 
 <template>
@@ -76,7 +76,7 @@ app.directive('pass-glyph', vPassGlyph);
 ```
 
 ```html
-<div v-pass-glyph="{ bits: 10 }"><input type="password"><input type="password"></div>
+<div v-pass-glyph="{ mode: 'inline' }"><input type="password"><input type="password"></div>
 ```
 
 ## SSR
@@ -90,4 +90,4 @@ import { webcrypto } from 'node:crypto';
 attach(pw, pw2, { crypto: webcrypto, debounce: 100, budget: 0, iterations: 10000 });
 ```
 
-jsdom has no canvas, so passglyph draws no glyph but the live region still updates. That's handy for asserting "Passwords match".
+jsdom has no canvas, so passglyph falls back to dots (`onFallback('canvas')`) but the live region still updates. That's handy for asserting "Passwords match". For reproducible sequences in tests, pass `unsafeSalt` (never in production).

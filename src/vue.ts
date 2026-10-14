@@ -4,7 +4,7 @@ import { attach, type Detach, type PassGlyphOptions } from './index.js';
 
 /**
  *   const pw = ref(), confirm = ref();
- *   usePassGlyph(pw, confirm, { bits: 10 });
+ *   usePassGlyph(pw, confirm, { mode: 'inline' });
  */
 export function usePassGlyph(password: Ref<HTMLInputElement | null | undefined>, confirm: Ref<HTMLInputElement | null | undefined>, opts: PassGlyphOptions = {}): void {
   let off: Detach | undefined;
@@ -13,7 +13,7 @@ export function usePassGlyph(password: Ref<HTMLInputElement | null | undefined>,
 }
 
 const offs = new WeakMap<Element, Detach>();
-/** `<div v-pass-glyph="{ bits: 10 }">` around two password inputs. */
+/** `<div v-pass-glyph="{ mode: 'inline' }">` around two password inputs. */
 export const vPassGlyph = {
   mounted(el: HTMLElement, b: { value?: PassGlyphOptions }) {
     const [a, c] = el.querySelectorAll<HTMLInputElement>('input[type="password"]');

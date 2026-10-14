@@ -3,29 +3,32 @@
 [![npm](https://img.shields.io/npm/v/passglyph.svg)](https://www.npmjs.com/package/passglyph)
 [![CI](https://github.com/MrLouisWright/passglyph/actions/workflows/ci.yml/badge.svg)](https://github.com/MrLouisWright/passglyph/actions/workflows/ci.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-![size](https://img.shields.io/badge/min%2Bgzip-2.8%20KB-success)
+![size](https://img.shields.io/badge/core-3.2%20KB%20gz-success)
 ![zero deps](https://img.shields.io/badge/dependencies-0-success)
 ![types](https://img.shields.io/badge/types-included-blue)
 
-> Spot a mistyped "confirm password" without showing the password.
+> Hieroglyphs instead of password dots. The same password shows the same glyphs in both fields, so you can see a typo where it happens, without the password ever being shown.
 
 **[Live demo →](https://mrlouiswright.github.io/passglyph/)** · [Docs (wiki)](https://github.com/MrLouisWright/passglyph/wiki) · [Security design](SECURITY-DESIGN.md) · [Launch post](docs/launch-post.md)
 
-<p align="center"><img src="docs/hero.svg" alt="A password field and a confirm field with the same glyph, and a mistyped confirm field with a different glyph" width="760"></p>
+<p align="center"><img src="docs/hero.svg" alt="A password field and a confirm field showing the same row of Egyptian hieroglyphs, and a mistyped confirm field whose glyphs diverge from position 6" width="760"></p>
 
-`passglyph` draws a small glyph next to a password field and its confirm field. **Same password, same glyph**; a typo almost always changes it. Users catch mistakes before submitting, without "show password" and without a server round trip.
+`passglyph` v2 replaces the masking dots in a password field and its confirm field with **Egyptian hieroglyphs** (a curated 64-sign set from U+13000–U+1342F). Matching passwords show the same sequence. A typo changes the glyphs **from the first wrong character on**. The glyphs are different on every page load.
 
-It revives the idea behind Chroma-Hash and HashMask (2009–13) with a design that doesn't leak:
+It's designed so that it doesn't leak:
 
-- **Fresh 128-bit salt per form instance** (`crypto.getRandomValues`). Glyphs can't be compared across sessions or sites, and a screenshot is useless without the salt.
-- **PBKDF2-SHA-256 (60,000 iterations) via WebCrypto**, debounced, with a non-extractable key. Derived bytes are zeroed after use.
-- **Low, capped entropy**: 10 bits by default, configurable 4–12, **hard cap 12**.
-- **Nothing for short input** and no per-keystroke animation. The repaint lands at a fixed deadline.
-- **Canvas only**: no derived bits in the DOM. Glyphs are `aria-hidden`, and a polite live region announces "Passwords match".
-- **No network, no storage, no `<style>` injection, no eval**, so it works under a strict CSP. Autofill and password managers work as usual.
-- Colour-blind-safe Okabe–Ito palette, and **shape + inner mark** distinguish glyphs too, so colour is never the only cue.
+- **No per-character mapping.** A character → glyph table would be a substitution cipher (`balloon` would show its repeated letters). Instead, glyph *i* is `HMAC-SHA-256(key, password[0..i])` truncated to **4–6 bits** (default 5, 32 glyphs). Repeated characters get unrelated glyphs.
+- **Per-instance 128-bit random key**, imported as a **non-extractable** WebCrypto key; the salt bytes are wiped. Without the key a screenshot or recording tells you nothing, and sessions or sites can't be correlated.
+- **The real `<input type="password">` stays exactly that.** The glyphs are drawn on an `aria-hidden` canvas overlay aligned with the caret. It scrolls with the text and handles selection, paste, IME, RTL, font size and resizing. Autofill, password managers and screen readers work as usual.
+- **No code points in the DOM.** Glyphs come from a bundled bitmap sprite drawn with `Path2D`, so there's no font and no `𓂀` text. A DOM snapshot is identical for any two passwords.
+- **No extra length or timing leak.** One glyph per dot, one repaint per input, no per-keystroke flourish, and work that depends only on the length.
+- **Falls back to normal dots** if canvas, Path2D or WebCrypto is missing.
+- **Accessible:** a polite live region announces "Passwords match" or "Passwords don't match".
+- **CSP-safe:** no `<style>` injection, no eval, no network, no storage.
 
-2.8 KB min+gzip, zero dependencies, TypeScript types, ESM + CJS + IIFE. Vanilla JS, a `<pass-glyph>` web component, and React and Vue wrappers.
+**The honest part:** each position shows about 5 bits *under that session's key*. If an attacker had the key, they could recover the password one character at a time. The key never leaves memory, and anything that could read it could read the input anyway. Inline mode also reveals *where* the first typo is (that's the point). The numbers are below and in [SECURITY-DESIGN.md](SECURITY-DESIGN.md). Want the stricter v1 behaviour (one PBKDF2 glyph beside each field, ≤ 12 bits total)? Use `mode: 'badge'`.
+
+**Sizes (min+gzip):** core 3.2 KB · hieroglyph sprite 3.8 KB (separate file, `passglyph/hieroglyphs`) · badge alphabet 1.3 KB (separate file, `passglyph/glyph`) · IIFE bundle with everything 8.2 KB. Zero dependencies, TypeScript types, ESM + CJS + IIFE. Vanilla JS, a `<pass-glyph>` web component, and React and Vue wrappers.
 
 ## Install
 
@@ -45,7 +48,7 @@ import { attach } from 'passglyph';
 const detach = attach(
   document.querySelector('#password'),
   document.querySelector('#confirm'),
-  { bits: 10, onChange: (match) => submit.disabled = match === false },
+  { onChange: (match) => submit.disabled = match === false },   // mode: 'inline' by default
 );
 // later: detach();
 ```
@@ -55,7 +58,7 @@ const detach = attach(
 ```html
 <script type="module">import 'passglyph/element';</script>
 
-<pass-glyph bits="10" min-length="8">
+<pass-glyph mode="inline" bits="5">
   <input type="password" autocomplete="new-password">
   <input type="password" autocomplete="new-password">
 </pass-glyph>
@@ -74,7 +77,7 @@ import { usePassGlyph } from 'passglyph/react';
 
 function SignUp() {
   const pw = useRef(null), confirm = useRef(null);
-  usePassGlyph(pw, confirm, { bits: 10 });
+  usePassGlyph(pw, confirm, { mode: 'inline' });
   return <><input ref={pw} type="password" /><input ref={confirm} type="password" /></>;
 }
 ```
@@ -90,7 +93,7 @@ usePassGlyph(pw, confirm);
 </script>
 <template>
   <input ref="pw" type="password" /><input ref="confirm" type="password" />
-  <!-- or: <div v-pass-glyph="{ bits: 10 }"><input type="password"><input type="password"></div> -->
+  <!-- or: <div v-pass-glyph="{ mode: 'badge' }"><input type="password"><input type="password"></div> -->
 </template>
 ```
 
@@ -102,50 +105,55 @@ usePassGlyph(pw, confirm);
 
 | Option | Default | Description |
 |---|---|---|
-| `bits` | `10` | Bits of entropy shown, **4–12** (values above 12 are clamped) |
-| `minLength` | `8` | Below this length a fixed neutral glyph is shown and nothing is announced (minimum 4) |
-| `iterations` | `60000` | PBKDF2 iterations (minimum 10,000) |
-| `debounce` | `300` | ms of quiet before updating (minimum 100) |
-| `budget` | `250` | Fixed repaint budget after the debounce, so timing doesn't depend on input |
-| `size` | `20` | Glyph size in CSS px |
-| `unstyled` | `false` | Set no CSSOM styles; style `.passglyph-glyph` / `.passglyph-sr` yourself |
-| `labels` | `{ match: 'Passwords match', mismatch: "Passwords don't match" }` | Live-region text (localise here) |
-| `onChange` | — | `(match: boolean \| null) => void` after each settled update |
-| `mount` | after input | `(input, canvas, 'password' \| 'confirm') => void` to place glyphs |
-| `mountStatus` | after confirm glyph | `(statusEl) => void` to place the live region |
+| `mode` | `'inline'` | `'inline'`: hieroglyphs replace the dots. `'badge'`: one v1 glyph beside each field |
+| `bits` | inline `5`, badge `10` | Inline: bits **per position**, 4–6 (16/32/64 glyphs). Badge: total bits, 4–12. Clamped |
+| `minLength` | `8` | Length before anything is announced (badge: before a glyph is shown). Minimum 4 |
+| `debounce` | `300` | ms of quiet before the announcement (badge: before the repaint). Minimum 100 |
+| `size` | inline `1.1`, badge `20` | Inline: glyph cell width in em. Badge: glyph size in px |
+| `iterations` | `60000` | Badge only: PBKDF2 iterations (minimum 10,000) |
+| `budget` | `250` | Badge only: fixed repaint deadline after the debounce |
+| `unstyled` | `false` | Don't style the badge canvases or hide the live region (style `.passglyph-sr` yourself). The inline overlay is always positioned |
+| `labels` | `{ match: 'Passwords match', mismatch: "Passwords don't match" }` | Live-region text |
+| `onChange` | — | `(match: boolean \| null) => void` |
+| `onFallback` | — | `(reason: 'canvas' \| 'webcrypto') => void` when passglyph falls back to native dots |
+| `mount`, `mountStatus` | — | Custom placement of badge canvases / the live region |
 | `crypto` | `globalThis.crypto` | WebCrypto implementation |
+| `unsafeSalt` | — | **Testing only:** fixed salt for reproducible sequences. Never use it in production |
 
-DOM added: one `<canvas class="passglyph-glyph" aria-hidden="true">` per input (the confirm glyph also gets `passglyph-match` / `passglyph-mismatch`) and one `<span class="passglyph-sr" role="status" aria-live="polite">`. `detach()` removes all of it.
+DOM added in inline mode: one `<canvas class="passglyph-overlay" aria-hidden="true">` per input, a few CSSOM properties on the input (`color`, `-webkit-text-fill-color` transparent, `caret-color`, `letter-spacing`), and one `<span class="passglyph-sr" role="status" aria-live="polite">`. `detach()` restores the inputs exactly and removes everything.
 
 ### Lower level
 
 | Export | Description |
 |---|---|
 | `createSalt(crypto?)` | `"passglyph/v1"` ‖ 16 random bytes; throws without a CSPRNG |
-| `deriveIndex(value, salt, bits, iterations, crypto?)` | PBKDF2 → glyph index `< 2^bits` |
-| `glyphOps(index, bits, ink?)`, `neutralOps(ink?)` | Glyph drawing ops (SVG path data) |
-| `paint(ctx, Path2D, ops, size, dpr)` | Draw ops on a canvas |
-| `opsToSVG(ops, size?)` | SVG markup for **legends and docs only**; live glyphs are never SVG in the DOM |
-| `clampBits`, `decompose`, `COLOURS`, `SHAPES`, `MAX_BITS` | Building blocks |
+| `instanceKey(salt, crypto?)` | Non-extractable HMAC-SHA-256 key; wipes `salt` |
+| `glyphSequence(key, value, bits?, crypto?)` | One index `< 2^bits` per code point, each from the HMAC of the prefix |
+| `hieroglyphPath(i)`, `HIEROGLYPH_COUNT` | Sprite path data (32×32 units) for **drawing only** |
+| `deriveIndex`, `glyphOps`, `neutralOps`, `paint`, `opsToSVG`, `clampBits` … | Badge mode building blocks (v1) |
 
 ## The trade-off, in numbers
 
-| bits | glyphs | typo goes unnoticed | worst case, *if the salt were stolen* |
-|---|---|---|---|
-| 8 | 256 | 0.39 % | guesses ÷ 256 |
-| **10** | **1,024** | **0.098 %** | **guesses ÷ 1,024** |
-| 12 (cap) | 4,096 | 0.024 % | guesses ÷ 4,096 |
+Inline mode, per position (b = `bits`):
 
-Without the salt (screenshots, shoulder surfing, screen recordings, DOM snapshots) the glyph tells an attacker **nothing** about the password. See [SECURITY-DESIGN.md](SECURITY-DESIGN.md) for the full threat model.
+| b | glyphs | typo missed at its position | missed at it and the next 9 | with the key (never exposed): survivors per position |
+|---|---|---|---|---|
+| 4 | 16 | 6.25 % | ≈ 10^-12 | ≈ 6 of 95 |
+| **5** | **32** | **3.1 %** | **≈ 10^-15** | **≈ 3 of 95** |
+| 6 | 64 | 1.6 % | ≈ 10^-18 | ≈ 1.5 of 95 |
+
+**Without the key** (screenshots, shoulder surfing, recordings, DOM snapshots) the sequence reveals nothing beyond the length the dots already showed, plus the position of the first mismatch. **With the key** it reveals about b bits per character, so treat it as near-full disclosure. That's why the key is non-extractable, per instance and memory-only. Badge mode reveals ≤ 12 bits in total, even with the salt.
 
 ## Compared
 
 | | passglyph | Chroma-Hash | hashmask |
 |---|---|---|---|
+| Shows the hint inside the field | ✔ inline hieroglyphs (or badge) | ✖ bars beside | ✖ beside |
+| Typo position visible | ✔ (inline) | ✖ | ✖ |
 | Last activity | 2026 | 2018 (jQuery plugin, 2009 idea) | 2013 (Chrome extension; Arc90 demo 2009) |
 | Per-session random salt | ✔ 128-bit | ✖ static developer-set salt (same colours every visit) | ✖ stable by design (to aid memorability) |
-| Slow keyed derivation | ✔ PBKDF2 60k | ✖ single MD5 | ✖ fast hash |
-| Entropy shown | 4–12 bits, capped | 1–4 colour bars, 12 bits each (4-bit components) | not capped |
+| Keyed derivation | ✔ HMAC, non-extractable key (inline); PBKDF2 60k (badge) | ✖ single MD5 | ✖ fast hash |
+| Entropy shown | 4–6 bits per position (inline); 4–12 total (badge) | 1–4 colour bars, 12 bits each (4-bit components) | not capped |
 | Nothing derived in DOM | ✔ canvas only | ✖ CSS colours | ✖ |
 | Accessible match announcement | ✔ | ✖ | ✖ |
 | Not colour-only | ✔ shape + mark | ✖ | partial |
@@ -153,17 +161,23 @@ Without the salt (screenshots, shoulder surfing, screen recordings, DOM snapshot
 | CSP-safe, zero deps | ✔ | jQuery | ✖ |
 | Web component / React / Vue | ✔ | ✖ | ✖ |
 
-## Limitations
+## Limitations and trade-offs
 
-- **Not a strength meter.** Matching says nothing about strength.
-- **No protection against keyloggers, malicious extensions, XSS or compromised scripts on the page**: they can read the input directly.
-- It's a hint, not verification. Still compare on submit (false-match rate 2^-bits).
-- The glyph changes on every page load, by design. Users shouldn't learn "their" glyph.
-- Without `<canvas>` it fails closed: no glyph, just the accessible status.
+- **Not a strength meter**, and **not protection against keyloggers, malicious extensions, XSS or compromised scripts**: they can read the input directly.
+- **Inline mode reveals where the first typo is**, and is only as strong as the in-memory key (see above). Use `mode: 'badge'` for the v1 guarantees.
+- **Caret alignment** relies on matching the browser's mask-character width with `letter-spacing`. That's tuned for Chromium/WebKit (`•`) and Firefox (`●`). Exotic fonts may be off by a fraction of a pixel per character.
+- **IME composition** shows native dots until it's committed.
+- A typo in the very last character is caught only by that one glyph (1 − 2^-b), and the "Passwords don't match" announcement covers it.
+- Hieroglyphs are 1-bit 32×32 sprites derived from Noto Sans Egyptian Hieroglyphs (OFL-1.1, see [NOTICE](NOTICE)). Wide signs render small.
+- It's a hint, not verification. Still compare on submit.
 
 ## Browser support
 
-Every browser with WebCrypto `subtle`, `Path2D` and canvas: all current evergreen browsers. WebCrypto requires a secure context (HTTPS or localhost). On Node 18, pass `crypto: require('node:crypto').webcrypto` (only relevant for tests).
+Every browser with WebCrypto `subtle`, canvas, `Path2D` and `measureText`: all current evergreen browsers. Without them you get plain dots. WebCrypto requires a secure context (HTTPS or localhost). On Node 18, pass `crypto: require('node:crypto').webcrypto` (only relevant for tests).
+
+## Upgrading from v1
+
+`attach()` now defaults to `mode: 'inline'`. Pass `mode: 'badge'` (or `<pass-glyph mode="badge">`) to keep v1 behaviour. `bits` means bits per position in inline mode. A missing WebCrypto now falls back to dots instead of throwing.
 
 ## Releasing
 

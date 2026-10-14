@@ -1,7 +1,7 @@
 {
   "name": "passglyph",
-  "version": "1.0.0",
-  "description": "Matching glyphs next to a password and its confirm field: spot a typo without revealing the password. Salted per page (crypto.getRandomValues), PBKDF2 via WebCrypto, capped 4-12 bits shown, canvas only (nothing derived in the DOM), aria-live match status, CSP-safe. Vanilla, <pass-glyph>, React & Vue. Zero deps.",
+  "version": "2.0.0",
+  "description": "Egyptian hieroglyphs instead of password dots: the password and confirm fields show the same glyph sequence when they match, so typos are visible where they happen, without revealing the password. Per-instance non-extractable HMAC key, prefix-keyed 4-6 bits per glyph (no per-character mapping), canvas-only sprite (no code points in the DOM), real input stays type=password, falls back to dots. Badge mode, <pass-glyph>, React & Vue. Zero deps.",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
@@ -17,6 +17,26 @@
       "require": {
         "types": "./dist/index.d.cts",
         "default": "./dist/index.cjs"
+      }
+    },
+    "./hieroglyphs": {
+      "import": {
+        "types": "./dist/hieroglyphs.d.ts",
+        "default": "./dist/hieroglyphs.mjs"
+      },
+      "require": {
+        "types": "./dist/hieroglyphs.d.cts",
+        "default": "./dist/hieroglyphs.cjs"
+      }
+    },
+    "./glyph": {
+      "import": {
+        "types": "./dist/glyph.d.ts",
+        "default": "./dist/glyph.mjs"
+      },
+      "require": {
+        "types": "./dist/glyph.d.cts",
+        "default": "./dist/glyph.cjs"
       }
     },
     "./element": {
@@ -58,6 +78,7 @@
     "README.md",
     "SECURITY-DESIGN.md",
     "CHANGELOG.md",
+    "NOTICE",
     "LICENSE"
   ],
   "sideEffects": [
@@ -89,17 +110,19 @@
     "password",
     "password-confirmation",
     "confirm-password",
+    "password-mask",
+    "hieroglyphs",
+    "egyptian-hieroglyphs",
     "typo",
-    "chroma-hash",
-    "hashmask",
     "visual-hash",
-    "glyph",
+    "hashmask",
+    "chroma-hash",
     "web-component",
     "accessibility",
     "react",
     "vue",
     "webcrypto",
-    "pbkdf2",
+    "hmac",
     "forms"
   ],
   "author": "Louis Wright <hello@louiswright.co.uk> (https://github.com/MrLouisWright)",

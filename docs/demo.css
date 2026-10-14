@@ -21,3 +21,10 @@
 .pg-bar span{display:block;height:100%}
 #bar-miss{background:#009E73}#bar-leak{background:#D55E00;margin-left:auto}
 .pg-list li{margin:.5em 0}
+#alphabet{width:384px;height:192px;max-width:100%}
+.pg-field{position:relative}
+.pg-field input{font-size:20px}
+.pg-mode{border:0;padding:0;margin:6px 0;display:flex;gap:16px;align-items:center}.pg-mode legend{float:left;margin-right:8px;font-weight:500}
+.pg-check{font-weight:400!important}
+.pg-naive{border:1px dashed #D55E00;border-radius:var(--r-sm);padding:12px;color:var(--text-2)}
+#naive-cv{width:600px;height:40px;max-width:100%}
