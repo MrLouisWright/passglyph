@@ -6,6 +6,7 @@
 ![size](https://img.shields.io/badge/core-3.2%20KB%20gz-success)
 ![zero deps](https://img.shields.io/badge/dependencies-0-success)
 ![types](https://img.shields.io/badge/types-included-blue)
+[![Node](https://img.shields.io/node/v/passglyph.svg)](https://nodejs.org)
 
 > Hieroglyphs instead of password dots. The same password shows the same glyphs in both fields, so you can see a typo where it happens, without the password ever being shown.
 
