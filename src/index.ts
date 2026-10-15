@@ -33,6 +33,14 @@ export interface PassGlyphOptions {
   crypto?: Crypto;
   /** TESTING ONLY: use this salt instead of a fresh random one. Never set it in production. */
   unsafeSalt?: Uint8Array;
+  /**
+   * When true, append a small unobtrusive credit link ("Built with passglyph").
+   * Off by default — MIT needs no attribution. Fixed text only (no derived data).
+   * Uses class `passglyph-credit` (no inline styles; CSP-safe). No network or tracking.
+   */
+  credit?: boolean;
+  /** Element or CSS selector to append the credit link into. Default: after the status / glyph area. */
+  creditTarget?: HTMLElement | string;
 }
 
 export type Detach = () => void;
@@ -179,11 +187,25 @@ export function attach(password: HTMLInputElement, confirm: HTMLInputElement, op
   opts.mountStatus ? opts.mountStatus(status) : anchor.insertAdjacentElement('afterend', status);
   if (password.value || confirm.value) later();
 
+  let creditEl: HTMLAnchorElement | null = null;
+  if (opts.credit) {
+    creditEl = doc.createElement('a');
+    creditEl.className = 'passglyph-credit';
+    creditEl.href = 'https://louiswright.co.uk';
+    creditEl.rel = 'noopener';
+    creditEl.textContent = 'Built with passglyph';
+    const t = opts.creditTarget;
+    const target = typeof t == 'string' ? doc.querySelector(t) : t;
+    if (target) target.appendChild(creditEl);
+    else status.insertAdjacentElement('afterend', creditEl);
+  }
+
   return () => {
     dead = true;
     cleanups.splice(0).forEach((f) => f());
     cvs.forEach((c) => c.remove());
     status.remove();
+    creditEl?.remove();
   };
 }
 

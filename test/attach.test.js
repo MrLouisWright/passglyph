@@ -178,3 +178,31 @@ test('without WebCrypto: no glyph, never Math.random, status still works, onFall
   assert.equal(p.document.querySelectorAll('canvas').length, 0);
   assert.equal(p.document.querySelector('[role=status]').textContent, 'Passwords match');
 });
+
+test('credit defaults off; when on mounts a fixed link; detach removes it', async () => {
+  const p = page();
+  attach(p.pw, p.pw2, FAST);
+  assert.equal(p.document.querySelector('.passglyph-credit'), null);
+  const off = attach(p.pw, p.pw2, { ...FAST, credit: true });
+  const a = p.document.querySelector('a.passglyph-credit');
+  assert.ok(a);
+  assert.equal(a.href, 'https://louiswright.co.uk/');
+  assert.equal(a.getAttribute('rel'), 'noopener');
+  assert.equal(a.textContent, 'Built with passglyph');
+  assert.equal(a.getAttribute('style'), null);
+  // Fixed credit text must not vary with passwords (no derived data)
+  type(p.pw, 'alpha-password-0001'); type(p.pw2, 'alpha-password-0001'); await settle();
+  assert.equal(a.textContent, 'Built with passglyph');
+  off();
+  assert.equal(p.document.querySelector('.passglyph-credit'), null);
+});
+
+test('creditTarget appends the credit link into a chosen container', () => {
+  const p = page();
+  const box = p.document.createElement('div');
+  p.document.body.append(box);
+  const off = attach(p.pw, p.pw2, { ...FAST, credit: true, creditTarget: box });
+  assert.equal(box.querySelector('.passglyph-credit').parentNode, box);
+  off();
+  assert.equal(box.querySelector('.passglyph-credit'), null);
+});

@@ -188,6 +188,23 @@ Publish a GitHub release for tag `vX.Y.Z`: `release.yml` tests, then publishes t
 
 If this project is useful to you, you can support its development with a donation: [Buy me a coffee](https://donate.stripe.com/aFa00lek3cvX4Ds2Fk9EI0b). It helps keep these tools maintained, documented and free for everyone.
 
+## Optional credit link
+
+MIT needs no attribution. If you want a small backlink next to the fields:
+
+```js
+const detach = attach(pw, pw2, { credit: true });
+// or: creditTarget: '#footer' / an HTMLElement
+```
+
+Style it yourself (no inline styles are set):
+
+```css
+.passglyph-credit { font-size: 0.75rem; opacity: 0.65; }
+```
+
+The link text is fixed (`Built with passglyph`) — nothing derived from the password. `detach()` removes it. Off by default; no network calls or tracking.
+
 ## Credit (optional)
 
 Free to use under MIT, no attribution required. If passglyph helps you, a link back is appreciated:

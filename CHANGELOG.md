@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.1.0 (2026-10-15)
+
+### Added
+- Optional `credit` / `creditTarget` on `attach()`: when `credit: true`, appends a small CSP-safe link (`class="passglyph-credit"`, fixed text only — no derived data). Off by default; detach removes it. No network or tracking.
+
+
 ## 2.0.0 (2026-10-14)
 
 Egyptian hieroglyphs replace the masking dots.

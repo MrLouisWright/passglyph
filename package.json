@@ -1,6 +1,6 @@
 {
   "name": "passglyph",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "Egyptian hieroglyphs instead of password dots: matching passwords show the same glyphs, typos show where they happen, nothing is revealed. Per-instance non-extractable HMAC key over each prefix (no per-character mapping), 4-6 bits/glyph, canvas sprite, input stays type=password, dot fallback. React, Vue, <pass-glyph>. Zero deps.",
   "type": "module",
   "main": "./dist/index.cjs",
