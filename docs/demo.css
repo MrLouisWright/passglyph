@@ -28,3 +28,7 @@
 .pg-check{font-weight:400!important}
 .pg-naive{border:1px dashed #D55E00;border-radius:var(--r-sm);padding:12px;color:var(--text-2)}
 #naive-cv{width:600px;height:40px;max-width:100%}
+/* minimalist template palette */
+.pg-field,.pg-alpha-grid{color:var(--muted)}
+.pg-status.ok{color:#137547}.pg-status.bad{color:#9a5b00}
+@media (prefers-color-scheme:dark){.pg-status.ok{color:#6fdc9a}.pg-status.bad{color:#f5c56b}}

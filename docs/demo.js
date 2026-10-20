@@ -1,7 +1,7 @@
 (function () {
   var P = window.passglyph; if (!P) return;
   var $ = function (id) { return document.getElementById(id); };
-  var ink = '#d1d5db';
+  var ink = getComputedStyle(document.body).color || '#d1d5db';
   function draw(ctx, i, x, y, s) { ctx.setTransform(s / 32, 0, 0, s / 32, x, y); ctx.fill(new Path2D(P.hieroglyphPath(i))); }
   // alphabet legend (static, unrelated to anything typed)
   var a = $('alphabet'), ac = a.getContext('2d'), dpr = Math.min(3, window.devicePixelRatio || 1);
